@@ -24,6 +24,6 @@ series and twenty images in each series.
 - Important Note: Locust only runs on Python 2.7+ but not Python 3.
 - To install locust if you already have Python - run: `pip install locustio`
 - To change from the default admin user and password change the auth_token variable in each file
-- Run `locust -f TEST_FILE.py --host=https://LINK TO slicebox` in the same folder as the test file to start the tool with bsi-dev as base url.
+- Run `locust -f TEST_FILE.py --host=http://LINK TO slicebox/api` in the same folder as the test file to start the tool targeting slicebox.
 - Go to http://localhost:8089/
 - Input appropriate test values and start the test.

@@ -5,7 +5,7 @@ auth_token = "Basic YWRtaW46YWRtaW4="
 
 auth_dict = {'Authorization': auth_token}
 
-class MetadataTaskSet(TaskSet):
+class FileUploadTaskSet(TaskSet):
     grasshopper = 0
     id = ""
 
@@ -17,10 +17,9 @@ class MetadataTaskSet(TaskSet):
     import_session_id = ""
 
     def on_start(self):
-        self.id = "{:0>3}".format(MetadataTaskSet.grasshopper)
-        MetadataTaskSet.grasshopper += 1
-        if (MetadataTaskSet.grasshopper <= 1):
-            self.create_import_session()
+        self.id = "{:0>3}".format(FileUploadTaskSet.grasshopper)
+        FileUploadTaskSet.grasshopper += 1
+        self.create_import_session()
         f = open("data/nm.dcm", "rb")
         self.data['nm'] = bytearray(f.read())
         f.close()
@@ -40,23 +39,25 @@ class MetadataTaskSet(TaskSet):
         r = self.client.post("/import/sessions", headers=auth_dict, json=json_msg, name="Create Import Session")
         self.import_session_id = r.json()['id']
 
-    @task(1)
+    @task(10)
     def upload_image(self):
         for study in range(2):
             for series in range(2):
                 for instance in range(1):
                     self.change_data(self.data['nm'], self.id, study, series, instance)
                     r = self.client.post("/images", headers=auth_dict, data=self.data['nm'], name="Upload Image")
-                    print("posting image for patient {0}, study:{1}, series:{2}, instance:{3}".format(self.id, study, series, instance))
+                    print("posting image for patient {0}, study:{1}, series:{2}, instance:{3}\tResponse:{4}".format(self.id, study, series, instance, r))
 
-    @task(1)
+    @task(10)
     def upload_image_in_import_session(self):
         for study in range(2):
             for series in range(2):
                 for instance in range(20):
                     self.change_data(self.data['ct'], self.id, study, series, instance)
                     r = self.client.post("/import/sessions/{0}/images".format(self.import_session_id), headers=auth_dict, data=self.data['ct'], name="Upload Image in Session")
-                    print("posting image for patient {0}, study:{1}, series:{2}, instance:{3}".format(self.id, study, series, instance))
+                    print("posting image in import session for patient {0}, study:{1}, series:{2}, instance:{3}\tResponse:{4}".format(self.id, study, series, instance, r))
+                    if (r.status_code != 201):
+                        print("URL: /import/sessions/{0}/images".format(self.import_session_id))
 
     # @task(1)
     def delete_patients(self):
@@ -75,7 +76,7 @@ def change_string_in_data(data, index, new_value):
         index += 1
 
 class MyLocust(HttpLocust):
-    task_set = MetadataTaskSet
+    task_set = FileUploadTaskSet
     min_wait = 1 * 1000
     max_wait = 10 * 1000
 
